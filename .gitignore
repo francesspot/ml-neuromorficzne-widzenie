@@ -1,0 +1,4 @@
+.venv/
+snn-ui/node_modules/
+snn-ui/.next/
+data/
