@@ -33,6 +33,7 @@
           langchain-chroma
           langchain
           langchain-google-genai
+          tonic
         ]);
 
         # Common C libraries required by native ML Python extensions
