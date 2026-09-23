@@ -1,16 +1,25 @@
 "use client";
+
 import { useState } from "react";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleUpload = async (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
 
-    setIsLoading(true);
+    setLoading(true);
+    setError("");
     setResult(null);
 
     const formData = new FormData();
@@ -22,70 +31,75 @@ export default function Home() {
         body: formData,
       });
 
+      if (!response.ok) {
+        throw new Error("Błąd serwera. Upewnij się, że FastAPI działa.");
+      }
+
       const data = await response.json();
-      setResult(data);
-    } catch (error) {
-      console.error("Błąd połączenia z API:", error);
-      setResult({
-        status: "error",
-        message: "Nie udało się połączyć z backendem SNN.",
-      });
+      if (data.status === "success") {
+        setResult(data);
+      } else {
+        setError(data.message);
+      }
+    } catch (err: any) {
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6 text-center">
-          Neuromorficzne widzenie
-        </h1>
+    <main className="flex min-h-screen flex-col items-center p-12 bg-gray-50 text-gray-900">
+      <h1 className="text-4xl font-bold mb-8">Neuromorficzne Widzenie - SNN</h1>
 
-        <form onSubmit={handleUpload} className="space-y-4">
-          <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <p className="text-sm text-slate-500 font-medium">
-                  {file ? file.name : "Wybierz plik z danymi"}
-                </p>
-              </div>
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-            </label>
-          </div>
-
+      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-6 items-center"
+        >
+          <label className="w-full">
+            <span className="block text-sm font-medium text-gray-700 mb-2">
+              Wybierz nagranie wideo (.mp4)
+            </span>
+            <input
+              type="file"
+              accept=".mp4"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+          </label>
           <button
             type="submit"
-            disabled={!file || isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            disabled={!file || loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-400"
           >
-            {isLoading ? "Analizowanie..." : "Rozpoznaj obiekt"}
+            {loading ? "Przetwarzanie przez SNN..." : "Rozpoznaj obiekt"}
           </button>
         </form>
-
-        {result && (
-          <div
-            className={`mt-6 p-4 rounded-lg border ${result.status === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
-          >
-            <h3 className="font-semibold mb-1">Wynik inferencji:</h3>
-            {result.status === "success" ? (
-              <div>
-                <p className="text-xl font-bold">{result.predicted_class}</p>
-                <p className="text-sm opacity-75 mt-2">
-                  Wymiary wgranego tensora:{" "}
-                  {JSON.stringify(result.tensor_shape)}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm">{result.message}</p>
-            )}
-          </div>
-        )}
       </div>
+
+      {error && <p className="text-red-500 mt-6 font-semibold">{error}</p>}
+
+      {result && (
+        <div className="mt-12 flex flex-col items-center gap-6 w-full max-w-4xl bg-white p-8 rounded-xl shadow-md">
+          <h2 className="text-3xl font-semibold text-green-600">
+            Wykryta klasa: {result.predicted_class}
+          </h2>
+
+          {result.animation_base64 && (
+            <div className="mt-4 flex flex-col items-center w-full">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Podgląd: Oryginał vs. Emulator kamery DVS
+              </h3>
+              <img
+                src={result.animation_base64}
+                alt="Symulacja wizji neuromorficznej"
+                className="border-2 border-gray-200 rounded-lg shadow-sm w-full object-contain"
+              />
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
