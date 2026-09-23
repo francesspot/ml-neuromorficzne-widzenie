@@ -30,7 +30,7 @@ model = FranciszekSCNN(
     population=10
 ).to(device)
 
-model.load_state_dict(torch.load('franciszek_scnn_53.pth', map_location=device))
+model.load_state_dict(torch.load('franciszek_scnn_53.pth', map_location=device, weights_only=True))
 model.eval() 
 
 NCALTECH_CLASSES = [

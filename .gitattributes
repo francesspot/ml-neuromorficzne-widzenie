@@ -1,0 +1,3 @@
+*.pth binary
+*.pyc binary
+__pycache__ binary
