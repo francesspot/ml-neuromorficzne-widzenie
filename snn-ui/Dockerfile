@@ -3,7 +3,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm install && find /app/node_modules -name '*.sh' -type f -exec sed -i 's/\r$//' {} +
 
 COPY . .
 
