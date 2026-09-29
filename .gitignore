@@ -1,3 +1,7 @@
+.venv/
+snn-ui/.next/
+snn-ui/node/
+data/
 .direnv/
 CNN/datasets
 datasets/
