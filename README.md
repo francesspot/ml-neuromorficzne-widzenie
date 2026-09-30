@@ -13,13 +13,13 @@ Aplikacja full-stack demonstrująca działanie impulsowych sieci neuronowych (SN
 1. **Deep Pop-SCNN (Franciszek)**
    - **Framework:** `snnTorch`
    - **Charakterystyka:** Architektura oparta na 3 warstwach splotowych i 2 w pełni połączonych. Wykorzystuje **kodowanie populacyjne** (10 neuronów na klasę) oraz adaptacyjne neurony _Leaky Integrate-and-Fire_ (LIF), które w trakcie treningu uczą się własnych parametrów membrany ($\beta$) i progu pobudzenia. Zapewnia najwyższą elastyczność i odporność na szum.
-2. **CSNN (Liudmyła)**
+2. **CSNN (Liudmyla)**
    - **Framework:** `snnTorch`
    - **Charakterystyka:** Lekka sieć splotowa (2 warstwy Conv + 1 Linear) używająca kodowania częstotliwościowego. Zoptymalizowana pod kątem mniejszego zużycia zasobów.
-3. **SEW-ResNet18 - Rate Coding (Weronika)**
+3. **SEW-ResNet18 - Rate Coding (Veronika)**
    - **Framework:** `SpikingJelly`
    - **Charakterystyka:** Głęboka, 18-warstwowa sieć wykorzystująca bloki Spiking Element-Wise (połączenia typu ADD), rozwiązująca problem zanikającego gradientu. Osiąga najwyższą bazową skuteczność (Accuracy).
-4. **T-SEW-ResNet18 - Temporal Coding (Weronika)**
+4. **T-SEW-ResNet18 - Temporal Coding (Veronika)**
    - **Framework:** `SpikingJelly`
    - **Charakterystyka:** Wariant architektury SEW-ResNet bazujący na kodowaniu czasowym (Spike-timing) i funkcji straty analizującej moment wystąpienia impulsu, a nie tylko ich zliczoną sumę.
 
@@ -61,6 +61,6 @@ Zalecanym sposobem uruchomienia projektu jest użycie Dockera. Dzięki temu cał
 Projekt zrealizowany w ramach przedmiotu w składzie:
 
 - **Franciszek Pora** (Architektura SCNN Pop-Coding, Full-stack integration, Continual Learning)
-- **Liudmyla Lachynova / Tkachnko** (Architektura podstawowa CSNN)
-- **Weronika** (Architektura SEW-ResNet18 w wariantach Rate i Temporal)
-- **Jan Kranz**
+- **Liudmyla Tkachenko** (Architektura podstawowa CSNN)
+- **Veronika Lachynova** (Architektura SEW-ResNet18 w wariantach Rate i Temporal)
+- **Jan Kranz** (CNN vs SNN)
