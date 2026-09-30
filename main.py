@@ -213,6 +213,9 @@ async def retrain_model(
         snn_tensor = snn_tensor.to(device)
         if len(snn_tensor.shape) == 4:
             snn_tensor = snn_tensor.unsqueeze(1)
+            
+        if snn_tensor.size(0) > 20:
+            snn_tensor = snn_tensor[:20]
 
         target_tensor = torch.tensor([target_idx], dtype=torch.long).to(device)
 
@@ -267,7 +270,7 @@ async def retrain_model(
         with model_lock:
             model.train()
             try:
-                for _ in range(6):
+                for _ in range(10):
                     optimizer.zero_grad()
                     loss = compute_loss(snn_tensor, target_tensor)
                     loss.backward()
