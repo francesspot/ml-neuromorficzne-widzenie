@@ -1,18 +1,22 @@
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
-import torch
-import torch.optim as optim
-import snntorch.functional as SF
-import numpy as np
-import cv2
-import tempfile
-import imageio
 import os
+import io
 import base64
+import tempfile
 import threading
 from datetime import datetime
 
-from snn_model import FranciszekSCNN
+import cv2
+import imageio
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+import snntorch.functional as SF
+from spikingjelly.clock_driven import functional
+
+from snn_model import AppModelManager
 
 app = FastAPI(title="Neuromorficzne widzenie")
 
@@ -25,31 +29,25 @@ app.add_middleware(
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model = FranciszekSCNN(
-    beta=0.8417870100435023,
-    threshold=0.8033307250431925,
-    dropout_p=0.213169938848635,
-    slope=15,
-    population=10
-).to(device)
-
-model.load_state_dict(torch.load('franciszek_scnn_53.pth', map_location=device, weights_only=True))
-model.eval()
-
-for _frozen_module in (model.conv1, model.lif1, model.conv2, model.lif2, model.conv3, model.lif3):
-    for p in _frozen_module.parameters():
-        p.requires_grad = False
-
-loss_fn = SF.ce_count_loss(population_code=True, num_classes=101)
-
+manager = AppModelManager(device)
 model_lock = threading.Lock()
 
 CORRECTIONS_DIR = "corrections_data"
 os.makedirs(CORRECTIONS_DIR, exist_ok=True)
 
 NCALTECH_CLASSES = [
-    'BACKGROUND_Google', 'Faces_easy', 'Leopards', 'Motorbikes', 'accordion', 'airplanes', 'anchor', 'ant', 'barrel', 'bass', 'beaver', 'binocular', 'bonsai', 'brain', 'brontosaurus', 'buddha', 'butterfly', 'camera', 'cannon', 'car_side', 'ceiling_fan', 'cellphone', 'chair', 'chandelier', 'cougar_body', 'cougar_face', 'crab', 'crayfish', 'crocodile', 'crocodile_head', 'cup', 'dalmatian', 'dollar_bill', 'dolphin', 'dragonfly', 'electric_guitar', 'elephant', 'emu', 'euphonium', 'ewer', 'ferry', 'flamingo', 'flamingo_head', 'garfield', 'gerenuk', 'gramophone', 'grand_piano', 'hawksbill', 'headphone', 'hedgehog', 'helicopter', 'ibis', 'inline_skate', 'joshua_tree', 'kangaroo', 'ketch', 'lamp', 'laptop', 'llama', 'lobster', 'lotus', 'mandolin', 'mayfly', 'menorah', 'metronome', 'minaret', 'nautilus', 'octopus', 'okapi', 'pagoda', 'panda', 'pigeon', 'pizza', 'platypus', 'pyramid', 'revolver', 'rhino', 'rooster', 'saxophone', 'schooner', 'scissors', 'scorpion', 'sea_horse', 'snoopy', 'soccer_ball', 'stapler', 'starfish', 'stegosaurus', 'stop_sign', 'strawberry', 'sunflower', 'tick', 'trilobite', 'umbrella', 'watch', 'water_lilly', 'wheelchair', 'wild_cat', 'windsor_chair', 'wrench', 'yin_yang'
+    'BACKGROUND_Google', 'Faces_easy', 'Leopards', 'Motorbikes', 'accordion', 'airplanes', 'anchor', 'ant',
+    'barrel', 'bass', 'beaver', 'binocular', 'bonsai', 'brain', 'brontosaurus', 'buddha', 'butterfly', 'camera',
+    'cannon', 'car_side', 'ceiling_fan', 'cellphone', 'chair', 'chandelier', 'cougar_body', 'cougar_face',
+    'crab', 'crayfish', 'crocodile', 'crocodile_head', 'cup', 'dalmatian', 'dollar_bill', 'dolphin',
+    'dragonfly', 'electric_guitar', 'elephant', 'emu', 'euphonium', 'ewer', 'ferry', 'flamingo',
+    'flamingo_head', 'garfield', 'gerenuk', 'gramophone', 'grand_piano', 'hawksbill', 'headphone',
+    'hedgehog', 'helicopter', 'ibis', 'inline_skate', 'joshua_tree', 'kangaroo', 'ketch', 'lamp', 'laptop',
+    'llama', 'lobster', 'lotus', 'mandolin', 'mayfly', 'menorah', 'metronome', 'minaret', 'nautilus',
+    'octopus', 'okapi', 'pagoda', 'panda', 'pigeon', 'pizza', 'platypus', 'pyramid', 'revolver', 'rhino',
+    'rooster', 'saxophone', 'schooner', 'scissors', 'scorpion', 'sea_horse', 'snoopy', 'soccer_ball',
+    'stapler', 'starfish', 'stegosaurus', 'stop_sign', 'strawberry', 'sunflower', 'tick', 'trilobite',
+    'umbrella', 'watch', 'water_lilly', 'wheelchair', 'wild_cat', 'windsor_chair', 'wrench', 'yin_yang'
 ]
 
 
@@ -65,7 +63,7 @@ def _resize_and_center_crop(img, target_size):
     return resized[top:top + target_h, left:left + target_w]
 
 
-def process_mp4_to_snn(video_path, target_size=(80, 80), spike_percentile=98.5, min_diff_threshold=6):
+def process_mp4_to_snn(video_path, target_size=(80, 80), spike_percentile=98.5, min_diff_threshold=15):
     cap = cv2.VideoCapture(video_path)
     ret, prev_frame = cap.read()
     if not ret:
@@ -109,7 +107,6 @@ def process_mp4_to_snn(video_path, target_size=(80, 80), spike_percentile=98.5, 
         visualization_frames.append(cv2.cvtColor(side_by_side, cv2.COLOR_BGR2RGB))
 
         spike_frame = np.stack([spikes_on, spikes_off], axis=0)
-
         for _ in range(3):
             snn_tensor_list.append(spike_frame)
 
@@ -120,58 +117,54 @@ def process_mp4_to_snn(video_path, target_size=(80, 80), spike_percentile=98.5, 
     if not snn_tensor_list:
         return None, None
 
-    snn_tensor = torch.tensor(np.array(snn_tensor_list), dtype=torch.float32)
+    return torch.tensor(np.array(snn_tensor_list), dtype=torch.float32), visualization_frames
 
-    return snn_tensor, visualization_frames
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    model_name: str = Form("franciszek_scnn")
+):
     with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_video:
         content = await file.read()
         temp_video.write(content)
         temp_video_path = temp_video.name
-        
+
     try:
         tensor_data, viz_frames = process_mp4_to_snn(temp_video_path)
-        
+
         if tensor_data is None:
-            os.remove(temp_video_path)
+            if os.path.exists(temp_video_path):
+                os.remove(temp_video_path)
             return {"status": "error", "message": "Nie udało się odczytać pliku wideo."}
-            
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.gif') as temp_gif:
-            imageio.mimsave(temp_gif.name, viz_frames, fps=15)
-            with open(temp_gif.name, "rb") as gif_file:
-                gif_base64 = base64.b64encode(gif_file.read()).decode('utf-8')
-        
-        os.remove(temp_video_path)
-        os.remove(temp_gif.name)
-        
+
+        buf = io.BytesIO()
+        imageio.mimsave(buf, viz_frames, format='GIF', fps=15, loop=0)
+        gif_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+
+        if os.path.exists(temp_video_path):
+            os.remove(temp_video_path)
+
         tensor_data = tensor_data.to(device)
         if len(tensor_data.shape) == 4:
-            tensor_data = tensor_data.unsqueeze(1) 
-            
+            tensor_data = tensor_data.unsqueeze(1)
+
         tensor_data_flipped = torch.flip(tensor_data, dims=[-1])
 
         with model_lock:
-            model.eval()
-            with torch.no_grad():
-                spk_out, _ = model(tensor_data)
-                spk_out_flipped, _ = model(tensor_data_flipped)
+            logits = manager.get_logits(model_name, tensor_data, tensor_data_flipped)
+            predicted_idx = logits.argmax(dim=0).item()
+            predicted_class_name = NCALTECH_CLASSES[predicted_idx] if predicted_idx < len(NCALTECH_CLASSES) else f"Class_{predicted_idx}"
 
-                spike_count = spk_out.sum(dim=0) + spk_out_flipped.sum(dim=0)
-                spike_count_population = spike_count.view(tensor_data.size(1), 101, 10).sum(dim=2)
-                predicted_idx = spike_count_population.argmax(dim=1).item()
-                predicted_class_name = NCALTECH_CLASSES[predicted_idx] if predicted_idx < len(NCALTECH_CLASSES) else f"Class_{predicted_idx}"
-
-                probs = torch.softmax(spike_count_population[0], dim=0)
-                top_probs, top_idx = torch.topk(probs, k=3)
-                top3 = [
-                    {
-                        "class": NCALTECH_CLASSES[i] if i < len(NCALTECH_CLASSES) else f"Class_{i}",
-                        "confidence": round(p.item(), 4),
-                    }
-                    for p, i in zip(top_probs, top_idx.tolist())
-                ]
+            probs = torch.softmax(logits, dim=0)
+            top_probs, top_idx = torch.topk(probs, k=3)
+            top3 = [
+                {
+                    "class": NCALTECH_CLASSES[i] if i < len(NCALTECH_CLASSES) else f"Class_{i}",
+                    "confidence": round(p.item(), 4),
+                }
+                for p, i in zip(top_probs, top_idx.tolist())
+            ]
 
         return {
             "status": "success",
@@ -180,16 +173,18 @@ async def predict(file: UploadFile = File(...)):
             "top3": top3,
             "animation_base64": f"data:image/gif;base64,{gif_base64}"
         }
-        
+
     except Exception as e:
-        if os.path.exists(temp_video_path): 
+        if os.path.exists(temp_video_path):
             os.remove(temp_video_path)
         return {"status": "error", "message": str(e)}
 
+
 @app.post("/retrain")
 async def retrain_model(
-    file: UploadFile = File(...), 
-    correct_class: str = Form(...)
+    file: UploadFile = File(...),
+    correct_class: str = Form(...),
+    model_name: str = Form("franciszek_scnn")
 ):
     try:
         target_idx = NCALTECH_CLASSES.index(correct_class)
@@ -209,24 +204,64 @@ async def retrain_model(
 
     try:
         snn_tensor, _ = process_mp4_to_snn(temp_video_path)
-        os.remove(temp_video_path)
-        
+        if os.path.exists(temp_video_path):
+            os.remove(temp_video_path)
+
         if snn_tensor is None:
-            return {"status": "error", "message": "Błąd przetwarzania wideo"}
-            
+            return {"status": "error", "message": "Błąd przetwarzania pliku wideo."}
+
         snn_tensor = snn_tensor.to(device)
         if len(snn_tensor.shape) == 4:
-            snn_tensor = snn_tensor.unsqueeze(1) 
-            
+            snn_tensor = snn_tensor.unsqueeze(1)
+
         target_tensor = torch.tensor([target_idx], dtype=torch.long).to(device)
 
-        head_params = (
-            list(model.fc1.parameters())
-            + list(model.lif4.parameters())
-            + list(model.fc2.parameters())
-            + list(model.lif5.parameters())
-        )
+        model = manager.get_model(model_name)
+
+        if model_name == "franciszek_scnn":
+            head_params = (
+                list(model.fc1.parameters())
+                + list(model.lif4.parameters())
+                + list(model.fc2.parameters())
+                + list(model.lif5.parameters())
+            )
+        elif model_name == "liudmyla_scnn":
+            head_params = list(model.linear.parameters()) + list(model.leaky2.parameters())
+        elif model_name == "weronika_sew18":
+            head_params = list(model.fc.parameters())
+        elif model_name == "weronika_t_sew18":
+            head_params = list(model.fc.parameters())
+            if hasattr(model, "t_out") and model.t_out is not None:
+                head_params += list(model.t_out.parameters())
+        else:
+            return {"status": "error", "message": f"Nieobsługiwany model: {model_name}"}
+
         optimizer = optim.Adam(head_params, lr=0.0005)
+
+        def compute_loss(input_tensor, targets):
+            if model_name == "franciszek_scnn":
+                spk, _ = model(input_tensor)
+                loss_fn_pop = SF.ce_count_loss(population_code=True, num_classes=101)
+                return loss_fn_pop(spk, targets)
+
+            elif model_name == "liudmyla_scnn":
+                spk, _ = model(input_tensor)
+                loss_fn_rate = SF.ce_count_loss(population_code=False, num_classes=101)
+                return loss_fn_rate(spk, targets)
+
+            elif model_name == "weronika_sew18":
+                out = model(input_tensor)
+                functional.reset_net(model)
+                if out.dim() == 3:
+                    out = out.mean(dim=0)
+                ce_loss = nn.CrossEntropyLoss()
+                return ce_loss(out, targets)
+
+            elif model_name == "weronika_t_sew18":
+                out = model(input_tensor)
+                functional.reset_net(model)
+                temp_loss = SF.ce_temporal_loss()
+                return temp_loss(out, targets)
 
         final_loss = None
         with model_lock:
@@ -234,22 +269,23 @@ async def retrain_model(
             try:
                 for _ in range(6):
                     optimizer.zero_grad()
-                    spk_out, _ = model(snn_tensor)
-                    loss = loss_fn(spk_out, target_tensor)
+                    loss = compute_loss(snn_tensor, target_tensor)
                     loss.backward()
                     optimizer.step()
                     final_loss = loss.item()
-                    if final_loss < 0.05: 
+                    if final_loss < 0.05:
                         break
             finally:
                 model.eval()
+                if "weronika" in model_name:
+                    functional.reset_net(model)
 
         return {
             "status": "success",
-            "message": f"Głowa klasyfikacyjna douczona. Loss: {final_loss:.4f}. Nagranie zapisane jako {correction_path}.",
+            "message": f"Warstwy klasyfikatora pomyślnie zaktualizowane ({model_name}). Loss: {final_loss:.4f}. Nagranie zapisane.",
             "new_loss": float(final_loss)
         }
-        
+
     except Exception as e:
         if os.path.exists(temp_video_path):
             os.remove(temp_video_path)

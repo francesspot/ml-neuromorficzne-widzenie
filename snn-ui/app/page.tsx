@@ -106,20 +106,37 @@ const NCALTECH_CLASSES = [
   "yin_yang",
 ];
 
-const MODEL_STATS: Record<string, any> = {
+const MODEL_STATS: Record<
+  string,
+  { name: string; acc: string; latency: string; mem: string; train: string }
+> = {
   franciszek_scnn: {
-    name: "FranciszekSCNN (Rate Coding)",
+    name: "Franciszek SCNN (Deep Pop-SCNN)",
     acc: "53.1%",
     latency: "~120ms",
     mem: "150 MB",
-    train: "3.5h",
+    train: "50 epok",
   },
-  weronika_temp: {
-    name: "Weronika SNN (Temporal Coding)",
-    acc: "TBD",
-    latency: "TBD",
-    mem: "TBD",
-    train: "TBD",
+  liudmyla_scnn: {
+    name: "Liudmyła SCNN (Rate Coding)",
+    acc: "62.4%",
+    latency: "~110ms",
+    mem: "180 MB",
+    train: "10 epok",
+  },
+  weronika_sew18: {
+    name: "Weronika SEW-ResNet18 (Rate/Logits)",
+    acc: "65.02%",
+    latency: "~140ms",
+    mem: "220 MB",
+    train: "42 epoki",
+  },
+  weronika_t_sew18: {
+    name: "Weronika T-SEW-ResNet18 (Temporal spikes)",
+    acc: "44.35%",
+    latency: "~145ms",
+    mem: "220 MB",
+    train: "42 epoki",
   },
 };
 
@@ -135,16 +152,20 @@ export default function Home() {
   const [isRetraining, setIsRetraining] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+    if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
       setResult(null);
       setShowCorrection(false);
+      setError("");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file) {
+      setError("Najpierw wybierz plik wideo (.mp4)");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -153,6 +174,7 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("model_name", selectedModel);
 
     try {
       const response = await fetch("http://localhost:8000/predict", {
@@ -161,46 +183,58 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error("Błąd serwera. Upewnij się, że FastAPI działa.");
+        throw new Error(
+          `Błąd serwera (${response.status}). Upewnij się, że FastAPI działa pod adresem http://localhost:8000.`,
+        );
       }
 
       const data = await response.json();
       if (data.status === "success") {
         setResult(data);
       } else {
-        setError(data.message);
+        setError(data.message || "Wystąpił błąd podczas analizy.");
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Nie udało się połączyć z backendem.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRetrain = async () => {
-    if (!file) return;
+    if (!file) {
+      alert("Brak pliku wideo w pamięci podręcznej. Wybierz plik ponownie.");
+      return;
+    }
 
     setIsRetraining(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("correct_class", correctClass);
 
     try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("correct_class", correctClass);
+      formData.append("model_name", selectedModel);
+
       const res = await fetch("http://localhost:8000/retrain", {
         method: "POST",
         body: formData,
       });
+
+      if (!res.ok) {
+        throw new Error(`Błąd HTTP ${res.status}: ${res.statusText}`);
+      }
+
       const data = await res.json();
 
       if (data.status === "success") {
-        alert(`Sukces! ${data.message}`);
+        alert(`Sukces: ${data.message}`);
         setShowCorrection(false);
       } else {
-        alert(`Błąd: ${data.message}`);
+        alert(`Błąd dotrenowania: ${data.message}`);
       }
-    } catch (err) {
-      console.error(err);
-      alert("Błąd połączenia z serwerem.");
+    } catch (err: any) {
+      console.error("Retrain error:", err);
+      alert(`Błąd podczas mikro-treningu: ${err.message}`);
     } finally {
       setIsRetraining(false);
     }
@@ -212,19 +246,18 @@ export default function Home() {
 
       <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md mb-6">
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Wybierz model SNN:
+          Wybierz architekturę SNN:
         </label>
         <select
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
-          className="block w-full p-2 border border-gray-300 rounded mb-4 focus:ring-blue-500 focus:border-blue-500"
+          className="block w-full p-2 border border-gray-300 rounded mb-4 focus:ring-blue-500 focus:border-blue-500 bg-white"
         >
-          <option value="franciszek_scnn">
-            {MODEL_STATS.franciszek_scnn.name}
-          </option>
-          <option value="weronika_temp" disabled>
-            {MODEL_STATS.weronika_temp.name} - (Wkrótce)
-          </option>
+          {Object.entries(MODEL_STATS).map(([key, data]) => (
+            <option key={key} value={key}>
+              {data.name}
+            </option>
+          ))}
         </select>
 
         <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-gray-600 bg-gray-50 p-3 rounded border">
@@ -260,13 +293,13 @@ export default function Home() {
               type="file"
               accept=".mp4"
               onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
             />
           </label>
           <button
             type="submit"
             disabled={!file || loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-400"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-400 cursor-pointer"
           >
             {loading ? "Przetwarzanie przez SNN..." : "Rozpoznaj obiekt"}
           </button>
@@ -281,14 +314,25 @@ export default function Home() {
             <h2 className="text-3xl font-semibold text-green-600">
               Wykryta klasa: {result.predicted_class}
             </h2>
+
+            {result.top3 && (
+              <div className="mt-3 flex justify-center gap-4 text-xs text-gray-500">
+                {result.top3.map((item: any, idx: number) => (
+                  <span key={idx}>
+                    {item.class}: {(item.confidence * 100).toFixed(1)}%
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="w-full max-w-md">
             {!showCorrection ? (
               <div className="text-center">
                 <button
+                  type="button"
                   onClick={() => setShowCorrection(true)}
-                  className="text-sm text-red-500 underline hover:text-red-700 transition-colors"
+                  className="text-sm text-red-500 underline hover:text-red-700 transition-colors cursor-pointer"
                 >
                   Zła klasa? Popraw wynik i dotrenuj model
                 </button>
@@ -310,17 +354,19 @@ export default function Home() {
                   ))}
                 </select>
                 <button
+                  type="button"
                   onClick={handleRetrain}
                   disabled={isRetraining}
-                  className="bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 transition-colors disabled:bg-gray-400"
+                  className="bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 transition-colors disabled:bg-gray-400 cursor-pointer"
                 >
                   {isRetraining
                     ? "Trwa mikro-trening..."
                     : "Zatwierdź i dotrenuj model"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowCorrection(false)}
-                  className="text-xs text-gray-500 underline hover:text-gray-700 text-center"
+                  className="text-xs text-gray-500 underline hover:text-gray-700 text-center cursor-pointer"
                 >
                   Anuluj
                 </button>
