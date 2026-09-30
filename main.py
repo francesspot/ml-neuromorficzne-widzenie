@@ -63,7 +63,7 @@ def _resize_and_center_crop(img, target_size):
     return resized[top:top + target_h, left:left + target_w]
 
 
-def process_mp4_to_snn(video_path, target_size=(80, 80), spike_percentile=98.5, min_diff_threshold=15):
+def process_mp4_to_snn(video_path, target_size=(80, 80), spike_percentile=90.0, min_diff_threshold=5):
     cap = cv2.VideoCapture(video_path)
     ret, prev_frame = cap.read()
     if not ret:
