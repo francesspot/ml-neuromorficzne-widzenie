@@ -6,19 +6,19 @@
 
 > 🎓 Team final project of the AI/ML track of the **Summer Challenge 2026** (*Wakacyjne Wyzwanie*) run by the **KN Solvro** student research group (Wrocław University of Science and Technology)
 
-A full-stack app that shows how **Spiking Neural Networks (SNNs)** work — brain-inspired networks that pass "spikes" instead of plain numbers. ⚡ You upload a normal video, the app turns it into data from a virtual **event camera** and recognises what's in it (101 categories from the N-Caltech101 dataset).
+A full-stack app that shows how **Spiking Neural Networks (SNNs)** work — brain-inspired networks that pass "spikes" instead of plain numbers. The app takes a regular video, converts it into data from an emulated **event camera** and classifies its content (101 categories from the N-Caltech101 dataset).
 
 ## 🙋 My contribution
 
-- 🏗️ **Deep Pop-SCNN model** (snnTorch) — 3 convolutional + 2 fully connected layers, **population coding** (10 neurons per class) and LIF neurons that learn their own parameters
-- 🔗 **Full-stack integration** — FastAPI backend, Next.js frontend, bringing all 4 of the team's models into one app, Docker containerisation
-- 🔁 **Live fine-tuning** — when the model gets it wrong, the user points to the right class and the model retrains its last layers in a few short epochs without forgetting what it already knows
+- **Deep Pop-SCNN model** (snnTorch) — 3 convolutional + 2 fully connected layers, **population coding** (10 neurons per class) and LIF neurons that learn their own parameters
+- **Full-stack integration** — FastAPI backend, Next.js frontend, bringing all 4 of the team's models into one app, Docker containerisation
+- **Online fine-tuning** — when the model gets it wrong, the user points to the right class and the model retrains its last layers in a few short epochs without forgetting what it already knows
 
 ## ✨ App features
 
-- 🎥 **DVS camera emulator** — turns a regular `.mp4` into ON/OFF spikes, with a GIF preview
-- 🧩 **4 SNN architectures** to choose from (snnTorch and SpikingJelly), including SEW-ResNet18 with rate and temporal coding
-- 🔁 A `/retrain` endpoint for fine-tuning the models
+- **DVS camera emulator** — turns a regular `.mp4` into ON/OFF spikes, with a GIF preview
+- **4 SNN architectures** to choose from (snnTorch and SpikingJelly), including SEW-ResNet18 with rate and temporal coding
+- A `/retrain` endpoint for fine-tuning the models
 
 ## 👥 Team
 
@@ -32,4 +32,4 @@ cd ml-neuromorficzne-widzenie
 docker compose -f Docker-compose.yml up --build
 ```
 
-🎨 Frontend: <http://localhost:3000> · ⚙️ API: <http://localhost:8000/docs>
+Frontend: <http://localhost:3000> · API: <http://localhost:8000/docs>
