@@ -1,4 +1,6 @@
-﻿# Neuromorficzne Widzenie (Neuromorphic Vision)
+**Polski** | [English](README.en.md)
+
+# Neuromorficzne Widzenie (Neuromorphic Vision)
 
 Aplikacja full-stack demonstrująca działanie impulsowych sieci neuronowych (SNN - Spiking Neural Networks) w zadaniu klasyfikacji danych z kamer zdarzeniowych (event cameras). Projekt opiera się na zbiorze danych N-Caltech101 i integruje kilka różnych architektur SNN w jednym interfejsie graficznym, umożliwiając analizę wideo oraz douczanie modeli w czasie rzeczywistym.
 
@@ -26,10 +28,10 @@ Aplikacja full-stack demonstrująca działanie impulsowych sieci neuronowych (SN
 ## 📂 Struktura repozytorium
 
 - `snn-ui/` - Kod źródłowy frontendu napisanego w Next.js / React, stylizowany za pomocą Tailwind CSS.
-- `main.py` - Główny plik serwera backendowego w FastAPI, obsługujący przetwarzanie wideo, predykcję oraz endpoint `/retrain`.
+- `main.py` - Główny plik serwera backendowego w FastAPI, obsługujący przetwarzanie wideo, predykcję (`/predict`) oraz douczanie (`/retrain`).
 - `snn_model.py` / `sew_resnet.py` - Definicje klas modeli i menedżer wag.
 - `*.pth` - Zapisane, wyuczone wagi modeli dla poszczególnych architektur (np. `franciszek_scnn_best.pth`, `sew_resnet18_best.pth`).
-- `Dockerfile` / `docker-compose.yml` - Pliki konfiguracyjne do pełnej konteneryzacji aplikacji.
+- `Dockerfile` / `Docker-compose.yml` - Pliki konfiguracyjne do pełnej konteneryzacji aplikacji.
 - `requirements.txt` - Zależności dla środowiska Python (PyTorch, snnTorch, SpikingJelly, OpenCV, FastAPI).
 
 ## 🚀 Uruchomienie aplikacji (Docker)
@@ -38,12 +40,12 @@ Zalecanym sposobem uruchomienia projektu jest użycie Dockera. Dzięki temu cał
 
 1.  Sklonuj repozytorium:
 
-        git clone [https://github.com/twoj-profil/ml-neuromorficzne-widzenie.git](https://github.com/twoj-profil/ml-neuromorficzne-widzenie.git)
+        git clone https://github.com/francesspot/ml-neuromorficzne-widzenie.git
         cd ml-neuromorficzne-widzenie
 
-2.  Zbuduj i podnieś kontenery:
+2.  Zbuduj i podnieś kontenery (plik nazywa się `Docker-compose.yml`, więc trzeba go wskazać jawnie):
 
-        docker-compose up --build
+        docker compose -f Docker-compose.yml up --build
 
 3.  Otwórz przeglądarkę i przejdź do adresów:
     - **Frontend (Interfejs Użytkownika):** `http://localhost:3000`
