@@ -1,68 +1,35 @@
-[Polski](README.md) | **English**
+🇵🇱 [Polski](README.md) | 🇬🇧 **English**
 
-# Neuromorphic Vision
+# 🧠 Neuromorphic Vision
 
-A full-stack application demonstrating **Spiking Neural Networks (SNNs)** classifying data from event cameras. The project is based on the N-Caltech101 dataset and brings several SNN architectures together in one graphical interface, allowing video analysis and real-time fine-tuning of the models.
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 
-## ✨ Main features
+> 🎓 Team final project of the AI/ML track of the **Summer Challenge 2026** (*Wakacyjne Wyzwanie*) run by the **KN Solvro** student research group (Wrocław University of Science and Technology)
 
-- **On-the-fly DVS camera emulator:** the system takes standard video recordings (`.mp4`) and algorithmically converts them into event streams (ON/OFF spikes) in the format SNNs expect. The interface generates a side-by-side preview as a looping GIF.
-- **Support for multiple SNN architectures:** the app loads 4 independent models built with the `snnTorch` and `SpikingJelly` libraries.
-- **Online Continual Learning (micro-training):** a built-in mechanism that lets the user correct a wrong prediction. The system takes the file the user points to, trims the time sequence, initialises an optimiser for the last classifier layers (transfer learning) and fine-tunes the model in a few short epochs, reducing the loss without _catastrophic forgetting_.
+A full-stack app that shows how **Spiking Neural Networks (SNNs)** work — brain-inspired networks that pass "spikes" instead of plain numbers. ⚡ You upload a normal video, the app turns it into data from a virtual **event camera** and recognises what's in it (101 categories from the N-Caltech101 dataset).
 
-## 🧠 Implemented models
+## 🙋 My contribution
 
-1. **Deep Pop-SCNN (Franciszek)**
-   - **Framework:** `snnTorch`
-   - **Characteristics:** an architecture with 3 convolutional and 2 fully connected layers. It uses **population coding** (10 neurons per class) and adaptive _Leaky Integrate-and-Fire_ (LIF) neurons that learn their own membrane parameters ($\beta$) and firing thresholds during training. It offers the greatest flexibility and robustness to noise.
-2. **CSNN (Liudmyla)**
-   - **Framework:** `snnTorch`
-   - **Characteristics:** a lightweight convolutional network (2 Conv layers + 1 Linear) using rate coding. Optimised for lower resource usage.
-3. **SEW-ResNet18 — Rate Coding (Veronika)**
-   - **Framework:** `SpikingJelly`
-   - **Characteristics:** a deep, 18-layer network using Spiking Element-Wise blocks (ADD connections), which solves the vanishing-gradient problem. It achieves the highest baseline accuracy.
-4. **T-SEW-ResNet18 — Temporal Coding (Veronika)**
-   - **Framework:** `SpikingJelly`
-   - **Characteristics:** a variant of the SEW-ResNet architecture based on temporal (spike-timing) coding, with a loss function that looks at when a spike occurs rather than only at the total spike count.
+- 🏗️ **Deep Pop-SCNN model** (snnTorch) — 3 convolutional + 2 fully connected layers, **population coding** (10 neurons per class) and LIF neurons that learn their own parameters
+- 🔗 **Full-stack integration** — FastAPI backend, Next.js frontend, bringing all 4 of the team's models into one app, Docker containerisation
+- 🔁 **Live fine-tuning** — when the model gets it wrong, the user points to the right class and the model retrains its last layers in a few short epochs without forgetting what it already knows
 
-## 📂 Repository structure
+## ✨ App features
 
-- `snn-ui/` — frontend source code written in Next.js / React and styled with Tailwind CSS.
-- `main.py` — the main FastAPI backend server, handling video processing, prediction (`/predict`) and fine-tuning (`/retrain`).
-- `snn_model.py` / `sew_resnet.py` — model class definitions and the weights manager.
-- `*.pth` — saved trained weights for each architecture (e.g. `franciszek_scnn_best.pth`, `sew_resnet18_best.pth`).
-- `Dockerfile` / `Docker-compose.yml` — configuration files for full containerisation of the app.
-- `requirements.txt` — Python dependencies (PyTorch, snnTorch, SpikingJelly, OpenCV, FastAPI).
+- 🎥 **DVS camera emulator** — turns a regular `.mp4` into ON/OFF spikes, with a GIF preview
+- 🧩 **4 SNN architectures** to choose from (snnTorch and SpikingJelly), including SEW-ResNet18 with rate and temporal coding
+- 🔁 A `/retrain` endpoint for fine-tuning the models
 
-## 🚀 Running the app (Docker)
+## 👥 Team
 
-The recommended way to run the project is with Docker, which sets up the whole environment (including PyTorch's complex dependencies) automatically.
+**Franciszek Pora** · Liudmyla Tkachenko · Veronika Lachynova · Jan Kranz
 
-1.  Clone the repository:
+## 🚀 Run it
 
-        git clone https://github.com/francesspot/ml-neuromorficzne-widzenie.git
-        cd ml-neuromorficzne-widzenie
+```bash
+git clone https://github.com/francesspot/ml-neuromorficzne-widzenie.git
+cd ml-neuromorficzne-widzenie
+docker compose -f Docker-compose.yml up --build
+```
 
-2.  Build and start the containers (the file is named `Docker-compose.yml`, so it has to be passed explicitly):
-
-        docker compose -f Docker-compose.yml up --build
-
-3.  Open your browser and go to:
-    - **Frontend (user interface):** `http://localhost:3000`
-    - **Backend (API docs):** `http://localhost:8000/docs`
-
-## 🛠️ Technologies
-
-- **Machine Learning:** PyTorch, snnTorch, SpikingJelly
-- **Backend:** FastAPI, Python, OpenCV (video processing), Uvicorn
-- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
-- **DevOps:** Docker, Docker Compose
-
-## 👥 Project team
-
-The project was carried out as part of a university course by:
-
-- **Franciszek Pora** (Pop-Coding SCNN architecture, full-stack integration, continual learning)
-- **Liudmyla Tkachenko** (baseline CSNN architecture)
-- **Veronika Lachynova** (SEW-ResNet18 architecture in Rate and Temporal variants)
-- **Jan Kranz** (CNN vs SNN)
+🎨 Frontend: <http://localhost:3000> · ⚙️ API: <http://localhost:8000/docs>

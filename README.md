@@ -1,68 +1,35 @@
-**Polski** | [English](README.en.md)
+🇵🇱 **Polski** | 🇬🇧 [English](README.en.md)
 
-# Neuromorficzne Widzenie (Neuromorphic Vision)
+# 🧠 Neuromorficzne Widzenie
 
-Aplikacja full-stack demonstrująca działanie impulsowych sieci neuronowych (SNN - Spiking Neural Networks) w zadaniu klasyfikacji danych z kamer zdarzeniowych (event cameras). Projekt opiera się na zbiorze danych N-Caltech101 i integruje kilka różnych architektur SNN w jednym interfejsie graficznym, umożliwiając analizę wideo oraz douczanie modeli w czasie rzeczywistym.
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 
-## ✨ Główne funkcjonalności
+> 🎓 Projekt końcowy zespołu na ścieżce AI/ML **Wakacyjnego Wyzwania 2026** koła naukowego **KN Solvro** (Politechnika Wrocławska)
 
-- **Emulator kamery DVS w locie:** System przyjmuje standardowe nagrania wideo (`.mp4`), a następnie algorytmicznie przelicza je na ciągi zdarzeń (spikes ON/OFF) w formacie obsługiwanym przez SNN. W interfejsie generowany jest podgląd porównawczy w formie zapętlonej animacji GIF.
-- **Wsparcie dla wielu architektur SNN:** Aplikacja ładuje 4 niezależne modele, bazujące na bibliotekach `snnTorch` oraz `SpikingJelly`.
-- **Online Continual Learning (Mikro-trening):** Wbudowany mechanizm pozwalający użytkownikowi na poprawienie błędnej predykcji. System pobiera wskazany przez użytkownika plik, obcina sekwencję czasową, inicjalizuje optymalizator dla ostatnich warstw klasyfikatora (transfer learning) i doucza model w kilku krótkich epokach, minimalizując straty bez zjawiska _catastrophic forgetting_.
+Aplikacja full-stack, która pokazuje, jak działają **impulsowe sieci neuronowe (SNN)** — sieci inspirowane mózgiem, które zamiast liczb przesyłają „impulsy”. ⚡ Wrzucasz zwykłe nagranie wideo, aplikacja zamienia je na dane z wirtualnej **kamery zdarzeniowej** i rozpoznaje, co jest na filmie (101 kategorii ze zbioru N-Caltech101).
 
-## 🧠 Zaimplementowane modele
+## 🙋 Mój wkład
 
-1. **Deep Pop-SCNN (Franciszek)**
-   - **Framework:** `snnTorch`
-   - **Charakterystyka:** Architektura oparta na 3 warstwach splotowych i 2 w pełni połączonych. Wykorzystuje **kodowanie populacyjne** (10 neuronów na klasę) oraz adaptacyjne neurony _Leaky Integrate-and-Fire_ (LIF), które w trakcie treningu uczą się własnych parametrów membrany ($\beta$) i progu pobudzenia. Zapewnia najwyższą elastyczność i odporność na szum.
-2. **CSNN (Liudmyla)**
-   - **Framework:** `snnTorch`
-   - **Charakterystyka:** Lekka sieć splotowa (2 warstwy Conv + 1 Linear) używająca kodowania częstotliwościowego. Zoptymalizowana pod kątem mniejszego zużycia zasobów.
-3. **SEW-ResNet18 - Rate Coding (Veronika)**
-   - **Framework:** `SpikingJelly`
-   - **Charakterystyka:** Głęboka, 18-warstwowa sieć wykorzystująca bloki Spiking Element-Wise (połączenia typu ADD), rozwiązująca problem zanikającego gradientu. Osiąga najwyższą bazową skuteczność (Accuracy).
-4. **T-SEW-ResNet18 - Temporal Coding (Veronika)**
-   - **Framework:** `SpikingJelly`
-   - **Charakterystyka:** Wariant architektury SEW-ResNet bazujący na kodowaniu czasowym (Spike-timing) i funkcji straty analizującej moment wystąpienia impulsu, a nie tylko ich zliczoną sumę.
+- 🏗️ **Model Deep Pop-SCNN** (snnTorch) — 3 warstwy splotowe + 2 w pełni połączone, **kodowanie populacyjne** (10 neuronów na klasę) i neurony LIF, które same uczą się swoich parametrów
+- 🔗 **Integracja full-stack** — backend w FastAPI, frontend w Next.js, połączenie wszystkich 4 modeli zespołu w jednej aplikacji, konteneryzacja w Dockerze
+- 🔁 **Douczanie na żywo** — gdy model się pomyli, użytkownik wskazuje poprawną klasę, a model douczy ostatnie warstwy w kilku krótkich epokach, nie zapominając tego, co już umie
 
-## 📂 Struktura repozytorium
+## ✨ Funkcje aplikacji
 
-- `snn-ui/` - Kod źródłowy frontendu napisanego w Next.js / React, stylizowany za pomocą Tailwind CSS.
-- `main.py` - Główny plik serwera backendowego w FastAPI, obsługujący przetwarzanie wideo, predykcję (`/predict`) oraz douczanie (`/retrain`).
-- `snn_model.py` / `sew_resnet.py` - Definicje klas modeli i menedżer wag.
-- `*.pth` - Zapisane, wyuczone wagi modeli dla poszczególnych architektur (np. `franciszek_scnn_best.pth`, `sew_resnet18_best.pth`).
-- `Dockerfile` / `Docker-compose.yml` - Pliki konfiguracyjne do pełnej konteneryzacji aplikacji.
-- `requirements.txt` - Zależności dla środowiska Python (PyTorch, snnTorch, SpikingJelly, OpenCV, FastAPI).
+- 🎥 **Emulator kamery DVS** — zamiana zwykłego `.mp4` na impulsy ON/OFF z podglądem jako GIF
+- 🧩 **4 architektury SNN** do wyboru (snnTorch i SpikingJelly), m.in. SEW-ResNet18 w wersjach z kodowaniem częstotliwościowym i czasowym
+- 🔁 Endpoint `/retrain` do douczania modeli
 
-## 🚀 Uruchomienie aplikacji (Docker)
+## 👥 Zespół
 
-Zalecanym sposobem uruchomienia projektu jest użycie Dockera. Dzięki temu całe środowisko (wraz ze skomplikowanymi zależnościami PyTorcha) skonfiguruje się automatycznie.
+**Franciszek Pora** · Liudmyla Tkachenko · Veronika Lachynova · Jan Kranz
 
-1.  Sklonuj repozytorium:
+## 🚀 Uruchomienie
 
-        git clone https://github.com/francesspot/ml-neuromorficzne-widzenie.git
-        cd ml-neuromorficzne-widzenie
+```bash
+git clone https://github.com/francesspot/ml-neuromorficzne-widzenie.git
+cd ml-neuromorficzne-widzenie
+docker compose -f Docker-compose.yml up --build
+```
 
-2.  Zbuduj i podnieś kontenery (plik nazywa się `Docker-compose.yml`, więc trzeba go wskazać jawnie):
-
-        docker compose -f Docker-compose.yml up --build
-
-3.  Otwórz przeglądarkę i przejdź do adresów:
-    - **Frontend (Interfejs Użytkownika):** `http://localhost:3000`
-    - **Backend (API Docs):** `http://localhost:8000/docs`
-
-## 🛠️ Technologie
-
-- **Machine Learning:** PyTorch, snnTorch, SpikingJelly
-- **Backend:** FastAPI, Python, OpenCV (przetwarzanie wideo), Uvicorn
-- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
-- **DevOps:** Docker, Docker Compose
-
-## 👥 Zespół Projektowy
-
-Projekt zrealizowany w ramach przedmiotu w składzie:
-
-- **Franciszek Pora** (Architektura SCNN Pop-Coding, Full-stack integration, Continual Learning)
-- **Liudmyla Tkachenko** (Architektura podstawowa CSNN)
-- **Veronika Lachynova** (Architektura SEW-ResNet18 w wariantach Rate i Temporal)
-- **Jan Kranz** (CNN vs SNN)
+🎨 Frontend: <http://localhost:3000> · ⚙️ API: <http://localhost:8000/docs>
